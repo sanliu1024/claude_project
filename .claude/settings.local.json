@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"d:/claude_project/index.html\")",
+      "Bash(node server.js)",
+      "Bash(npm install *)"
+    ]
+  }
+}

@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术博客 - Markdown 编辑器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8fa;
+            --bg-tertiary: #e5e9ef;
+            --text-primary: #1a1a1a;
+            --text-secondary: #57606a;
+            --text-muted: #8b949e;
+            --border-color: #e1e4e8;
+            --accent: #0969da;
+            --accent-hover: #0855c2;
+            --code-bg: #f6f8fa;
+            --code-border: #e1e4e8;
+            --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-hover: 0 4px 6px rgba(0,0,0,0.15);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --border-color: #30363d;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --code-bg: #161b22;
+            --code-border: #30363d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), #8a2be2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .theme-toggle {
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            height: calc(100vh - 61px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent);
+        }
+
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .file-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .file-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .file-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .file-icon {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .file-item.active .file-icon {
+            opacity: 1;
+        }
+
+        .file-name {
+            flex: 1;
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .file-item.active .file-meta {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .file-actions {
+            display: none;
+            gap: 4px;
+        }
+
+        .file-item:hover .file-actions,
+        .file-item.active .file-actions {
+            display: flex;
+        }
+
+        .icon-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.1);
+            color: white;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        .file-item:not(.active) .icon-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .file-item:not(.active) .icon-btn:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            min-width: 0;
+        }
+
+        .editor-header {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .editor-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .status {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status.saved {
+            color: #238636;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            resize: none;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.7;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .preview-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 40px;
+            background: var(--bg-primary);
+        }
+
+        .preview-content {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* Markdown Styles */
+        .preview h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 24px 0 16px;
+            color: var(--text-primary);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 20px 0 12px;
+            color: var(--text-primary);
+        }
+
+        .preview h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 16px 0 10px;
+            color: var(--text-primary);
+        }
+
+        .preview p {
+            margin: 12px 0;
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        .preview code {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .preview pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .preview pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .preview ul, .preview ol {
+            margin: 12px 0;
+            padding-left: 24px;
+            line-height: 1.7;
+        }
+
+        .preview li {
+            margin: 4px 0;
+        }
+
+        .preview blockquote {
+            border-left: 3px solid var(--accent);
+            margin: 16px 0;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .preview a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .preview a:hover {
+            text-decoration: underline;
+        }
+
+        .preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+
+        .preview th, .preview td {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .preview th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .preview hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 24px 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            padding: 24px;
+            border-radius: 12px;
+            min-width: 320px;
+            box-shadow: var(--shadow-hover);
+        }
+
+        .modal-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 16px;
+        }
+
+        .modal-content input:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                z-index: 100;
+                height: 100%;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+                box-shadow: var(--shadow-hover);
+            }
+
+            .preview-container {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">&lt;/&gt;</div>
+                <span>技术博客</span>
+            </div>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="newFile()">+ 新建</button>
+                <button class="btn" onclick="openFile()">导入</button>
+                <button class="btn" onclick="handleSaveClick(event)">保存</button>
+            </div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+            <span id="themeIcon">🌙</span>
+        </button>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">文章列表</div>
+                <input type="text" class="search-box" placeholder="搜索文章..." id="searchBox" oninput="filterFiles()">
+            </div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+        <div class="main">
+            <div class="editor-container">
+                <div class="editor-header">
+                    <span class="editor-title" id="filename">未命名.md</span>
+                    <span class="status" id="status">已保存</span>
+                </div>
+                <textarea id="input" placeholder="开始写作..."></textarea>
+            </div>
+            <div class="preview-container">
+                <div class="preview-content preview" id="output"></div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="fileInput" accept=".md,.txt" onchange="handleFileSelect(event)">
+    <div class="modal" id="renameModal">
+        <div class="modal-content">
+            <h3>重命名文件</h3>
+            <input type="text" id="renameInput" placeholder="新文件名">
+            <div class="modal-buttons">
+                <button class="btn" onclick="hideRenameModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmRename()">确定</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE = '/api/files';
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        const fileInput = document.getElementById('fileInput');
+        const filenameEl = document.getElementById('filename');
+        const fileListEl = document.getElementById('fileList');
+        const renameModal = document.getElementById('renameModal');
+        const renameInput = document.getElementById('renameInput');
+        const searchBox = document.getElementById('searchBox');
+        const statusEl = document.getElementById('status');
+
+        let currentFilename = '未命名.md';
+        let fileHandle = null;
+        let files = {};
+        let currentFileId = null;
+        let saveTimeout = null;
+        let currentTheme = 'light';
+
+        // API 调用函数
+        async function apiCall(url, options = {}) {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            if (!response.ok && response.status !== 204) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+            if (response.status === 204) return null;
+            return response.json();
+        }
+
+        // 从云端加载文件
+        async function loadFilesFromCloud() {
+            try {
+                const cloudFiles = await apiCall(API_BASE);
+                if (cloudFiles && cloudFiles.length > 0) {
+                    files = {};
+                    cloudFiles.forEach(file => {
+                        files[file.id] = {
+                            id: file.id,
+                            name: file.name,
+                            content: file.content,
+                            updatedAt: file.updated_at || new Date().toISOString()
+                        };
+                    });
+                } else {
+                    await createDefaultFiles();
+                }
+            } catch (error) {
+                console.error('加载文件失败，使用本地存储:', error);
+                const saved = localStorage.getItem('mdFiles');
+                if (saved) {
+                    files = JSON.parse(saved);
+                }
+            }
+        }
+
+        // 创建默认文件
+        async function createDefaultFiles() {
+            const defaultFiles = [
+                {
+                    id: 'welcome',
+                    name: '欢迎使用.md',
+                    content: '# 欢迎使用技术博客编辑器\n\n这是一个支持 Markdown 的实时预览编辑器。\n\n## 功能特性\n\n- **实时预览**：左侧编辑，右侧实时渲染\n- **云端存储**：所有文件保存在云端数据库\n- **深色主题**：支持深色/浅色主题切换\n- **代码高亮**：支持代码语法高亮\n\n## 代码示例\n\n```javascript\nfunction hello() {\n    console.log("Hello, World!");\n}\n```\n\n## 快捷键\n\n| 快捷键 | 功能 |\n|--------|------|\n| Ctrl+S | 保存 |\n| Ctrl+N | 新建 |\n| Ctrl+O | 打开 |\n\n开始你的写作之旅吧！'
+                },
+                {
+                    id: 'tutorial',
+                    name: 'Markdown 教程.md',
+                    content: '# Markdown 基础教程\n\n## 标题\n\n使用 `#` 来创建标题，支持 1-6 级。\n\n## 文本样式\n\n- **粗体**：使用 `**文本**`\n- *斜体*：使用 `*文本*`\n- ~~删除线~~：使用 `~~文本~~`\n\n## 列表\n\n- 无序列表项 1\n- 无序列表项 2\n\n1. 有序列表项 1\n2. 有序列表项 2\n\n## 代码\n\n行内代码：`code`\n\n代码块：\n\n```python\ndef hello():\n    print("Hello, World!")\n```\n\n## 链接和图片\n\n[链接文本](https://example.com)\n\n## 引用\n\n> 这是一段引用文本。'
+                }
+            ];
+
+            for (const file of defaultFiles) {
+                try {
+                    await apiCall(API_BASE, {
+                        method: 'POST',
+                        body: JSON.stringify(file)
+                    });
+                    files[file.id] = { ...file, updatedAt: new Date().toISOString() };
+                } catch (error) {
+                    console.error('创建默认文件失败:', error);
+                }
+            }
+        }
+
+        // 保存当前文件到云端
+        async function saveCurrentFile() {
+            if (!currentFileId || !files[currentFileId]) return;
+
+            files[currentFileId].content = input.value;
+            files[currentFileId].updatedAt = new Date().toISOString();
+
+            localStorage.setItem('mdFiles', JSON.stringify(files));
+
+            try {
+                await apiCall(`${API_BASE}/${currentFileId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(files[currentFileId])
+                });
+                statusEl.textContent = '已保存';
+                statusEl.classList.add('saved');
+            } catch (error) {
+                console.error('保存到云端失败:', error);
+                statusEl.textContent = '保存失败';
+                statusEl.classList.remove('saved');
+            }
+        }
+
+        // 自动保存
+        function autoSave() {
+            clearTimeout(saveTimeout);
+            statusEl.textContent = '保存中...';
+            statusEl.classList.remove('saved');
+            saveTimeout = setTimeout(() => {
+                saveCurrentFile();
+            }, 1000);
+        }
+
+        // 渲染文件列表
+        function renderFileList() {
+            const filterText = searchBox.value.toLowerCase();
+            fileListEl.innerHTML = '';
+
+            Object.values(files)
+                .filter(file => file.name.toLowerCase().includes(filterText))
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                .forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = `file-item ${file.id === currentFileId ? 'active' : ''}`;
+                    const date = new Date(file.updatedAt).toLocaleDateString('zh-CN');
+                    item.innerHTML = `
+                        <span class="file-icon">📄</span>
+                        <div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-meta">${date}</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="icon-btn" onclick="event.stopPropagation(); renameFile('${file.id}')">✎</button>
+                            <button class="icon-btn" onclick="event.stopPropagation(); deleteFile('${file.id}')">✕</button>
+                        </div>
+                    `;
+                    item.onclick = () => switchFile(file.id);
+                    fileListEl.appendChild(item);
+                });
+        }
+
+        // 筛选文件
+        function filterFiles() {
+            renderFileList();
+        }
+
+        // 切换文件
+        async function switchFile(fileId) {
+            if (currentFileId && files[currentFileId]) {
+                files[currentFileId].content = input.value;
+                await saveCurrentFile();
+            }
+
+            const file = files[fileId];
+            if (file) {
+                currentFileId = fileId;
+                currentFilename = file.name;
+                input.value = file.content;
+                filenameEl.textContent = currentFilename;
+                render();
+                renderFileList();
+            }
+        }
+
+        // 新建文件
+        async function newFile() {
+            if (input.value.trim() !== '' && !confirm('确定要新建文件吗？当前未保存的内容将丢失。')) {
+                return;
+            }
+            const newId = 'file_' + Date.now();
+            const newFileName = prompt('请输入文件名:', '新文章.md');
+            if (!newFileName) return;
+
+            const newFile = {
+                id: newId,
+                name: newFileName,
+                content: ''
+            };
+
+            files[newId] = newFile;
+
+            try {
+                await apiCall(API_BASE, {
+                    method: 'POST',
+                    body: JSON.stringify(newFile)
+                });
+            } catch (error) {
+                console.error('创建文件失败:', error);
+            }
+
+            switchFile(newId);
+        }
+
+        // 删除文件
+        async function deleteFile(fileId) {
+            if (!confirm('确定要删除这个文件吗？')) return;
+
+            const fileIds = Object.keys(files);
+            if (fileIds.length <= 1) {
+                alert('至少保留一个文件！');
+                return;
+            }
+
+            try {
+                await apiCall(`${API_BASE}/${fileId}`, {
+                    method: 'DELETE'
+                });
+            } catch (error) {
+                console.error('删除文件失败:', error);
+            }
+
+            delete files[fileId];
+
+            if (currentFileId === fileId) {
+                const remainingFiles = Object.values(files);
+                switchFile(remainingFiles[0].id);
+            } else {
+                renderFileList();
+            }
+        }
+
+        // 重命名文件
+        function renameFile(fileId) {
+            const file = files[fileId];
+            if (!file) return;
+
+            currentFileId = fileId;
+            showRenameModal();
+        }
+
+        function showRenameModal() {
+            renameInput.value = currentFilename;
+            renameModal.classList.add('show');
+            renameInput.focus();
+            renameInput.select();
+        }
+
+        function hideRenameModal() {
+            renameModal.classList.remove('show');
+        }
+
+        async function confirmRename() {
+            const newName = renameInput.value.trim();
+            if (!newName) return;
+
+            if (currentFileId && files[currentFileId]) {
+                files[currentFileId].name = newName;
+                currentFilename = newName;
+                filenameEl.textContent = newName;
+
+                try {
+                    await apiCall(`${API_BASE}/${currentFileId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(files[currentFileId])
+                    });
+                } catch (error) {
+                    console.error('重命名失败:', error);
+                }
+
+                renderFileList();
+            }
+            hideRenameModal();
+        }
+
+        // 主题切换
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('themeIcon').textContent = currentTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', currentTheme);
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            currentTheme = savedTheme;
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('themeIcon').textContent = currentTheme === 'light' ? '🌙' : '☀️';
+        }
+
+        // 模态框事件
+        renameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                confirmRename();
+            } else if (e.key === 'Escape') {
+                hideRenameModal();
+            }
+        });
+
+        renameModal.addEventListener('click', function(e) {
+            if (e.target === renameModal) {
+                hideRenameModal();
+            }
+        });
+
+        // 初始化
+        async function init() {
+            initTheme();
+            await loadFilesFromCloud();
+            const firstFile = Object.values(files)[0];
+            if (firstFile) {
+                switchFile(firstFile.id);
+            }
+        }
+
+        init();
+
+        function render() {
+            output.innerHTML = marked.parse(input.value);
+        }
+
+        async function openFile() {
+            if ('showOpenFilePicker' in window) {
+                try {
+                    [fileHandle] = await window.showOpenFilePicker({
+                        types: [{
+                            description: 'Markdown 文件',
+                            accept: { 'text/markdown': ['.md'], 'text/plain': ['.txt'] }
+                        }]
+                    });
+                    const file = await fileHandle.getFile();
+                    const content = await file.text();
+                    const newId = 'file_' + Date.now();
+                    const newFile = {
+                        id: newId,
+                        name: file.name,
+                        content: content
+                    };
+                    files[newId] = newFile;
+
+                    try {
+                        await apiCall(API_BASE, {
+                            method: 'POST',
+                            body: JSON.stringify(newFile)
+                        });
+                    } catch (error) {
+                        console.error('上传文件到云端失败:', error);
+                    }
+
+                    switchFile(newId);
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('打开文件失败:', err);
+                        fileInput.click();
+                    }
+                }
+            } else {
+                fileInput.click();
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const content = e.target.result;
+                const newId = 'file_' + Date.now();
+                const newFile = {
+                    id: newId,
+                    name: file.name,
+                    content: content
+                };
+                files[newId] = newFile;
+
+                try {
+                    await apiCall(API_BASE, {
+                        method: 'POST',
+                        body: JSON.stringify(newFile)
+                    });
+                } catch (error) {
+                    console.error('上传文件到云端失败:', error);
+                }
+
+                switchFile(newId);
+            };
+            reader.readAsText(file);
+            fileInput.value = '';
+        }
+
+        async function saveFile() {
+            await saveCurrentFile();
+
+            if (fileHandle) {
+                try {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(input.value);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    console.warn('保存到本地文件失败，尝试另存为:', err);
+                }
+            }
+            if (confirm('已保存到云端。是否要导出到本地文件？')) {
+                await saveAs();
+            }
+        }
+
+        function handleSaveClick(event) {
+            if (event.shiftKey) {
+                saveAs();
+            } else {
+                saveFile();
+            }
+        }
+
+        async function saveAs() {
+            if ('showSaveFilePicker' in window) {
+                try {
+                    fileHandle = await window.showSaveFilePicker({
+                        suggestedName: currentFilename,
+                        types: [{
+                            description: 'Markdown 文件',
+                            accept: { 'text/markdown': ['.md'] }
+                        }]
+                    });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(input.value);
+                    await writable.close();
+                    currentFilename = fileHandle.name;
+                    filenameEl.textContent = currentFilename;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('保存失败:', err);
+                        fallbackSave();
+                    }
+                }
+            } else {
+                fallbackSave();
+            }
+        }
+
+        function fallbackSave() {
+            const content = input.value;
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 快捷键支持
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveFile();
+                } else if (e.key === 'S' && e.shiftKey) {
+                    e.preventDefault();
+                    saveAs();
+                } else if (e.key === 'o') {
+                    e.preventDefault();
+                    openFile();
+                } else if (e.key === 'n') {
+                    e.preventDefault();
+                    newFile();
+                }
+            }
+        });
+
+        input.addEventListener('input', function() {
+            render();
+            autoSave();
+        });
+        render();
+    </script>
+</body>
+</html>
