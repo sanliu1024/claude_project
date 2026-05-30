@@ -819,6 +819,24 @@
                 <span>技术博客</span>
             </div>
             <div class="toolbar">
+                <div class="new-dropdown">
+                    <button class="btn btn-primary" onclick="toggleNewMenu()">+ 新建</button>
+                    <div class="new-dropdown-menu" id="newMenu">
+                        <div class="location-selector" onclick="event.stopPropagation()">
+                            <div class="location-label">保存位置</div>
+                            <div class="location-tree" id="locationTree"></div>
+                        </div>
+                        <div class="new-dropdown-divider"></div>
+                        <div class="new-dropdown-item" onclick="newFile()">
+                            <span class="icon">📄</span>
+                            新建 Markdown 文件
+                        </div>
+                        <div class="new-dropdown-item" onclick="newFolder()">
+                            <span class="icon">📁</span>
+                            新建文件夹
+                        </div>
+                    </div>
+                </div>
                 <button class="btn" onclick="openFile()">导入</button>
                 <button class="btn" onclick="handleSaveClick(event)">保存</button>
                 <button class="edit-mode-toggle" id="editModeToggle" onclick="toggleEditMode()" title="切换编辑模式">
@@ -836,28 +854,6 @@
             <div class="sidebar-header">
                 <div class="sidebar-title">文件浏览器</div>
                 <input type="text" class="search-box" placeholder="搜索..." id="searchBox" oninput="filterFiles()">
-            </div>
-            <div class="new-buttons">
-                <div class="new-dropdown">
-                    <button class="new-dropdown-btn" onclick="toggleNewMenu()">
-                        <span>+</span> 新建
-                    </button>
-                    <div class="new-dropdown-menu" id="newMenu">
-                        <div class="location-selector" onclick="event.stopPropagation()">
-                            <div class="location-label">保存位置</div>
-                            <div class="location-tree" id="locationTree"></div>
-                        </div>
-                        <div class="new-dropdown-divider"></div>
-                        <div class="new-dropdown-item" onclick="newFile()">
-                            <span class="icon">📄</span>
-                            新建 Markdown 文件
-                        </div>
-                        <div class="new-dropdown-item" onclick="newFolder()">
-                            <span class="icon">📁</span>
-                            新建文件夹
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="file-list folder-tree" id="fileList"></div>
         </div>
