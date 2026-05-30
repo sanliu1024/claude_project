@@ -358,15 +358,122 @@
 
         /* 新建按钮区域 */
         .new-buttons {
-            display: flex;
-            gap: 8px;
             padding: 8px 12px;
             border-bottom: 1px solid var(--border-color);
         }
 
-        .new-buttons .btn {
-            flex: 1;
+        .new-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .new-dropdown-btn {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .new-dropdown-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .new-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: var(--shadow-hover);
+            z-index: 100;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .new-dropdown-menu.show {
+            display: block;
+        }
+
+        .new-dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+
+        .new-dropdown-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .new-dropdown-item .icon {
+            font-size: 16px;
+        }
+
+        .new-dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        /* 位置选择 */
+        .location-selector {
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin: 8px 12px;
+        }
+
+        .location-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .location-tree {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-primary);
+        }
+
+        .location-item {
             padding: 6px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-primary);
+        }
+
+        .location-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .location-item.selected {
+            background: var(--accent);
+            color: white;
+        }
+
+        .location-item .icon {
             font-size: 12px;
         }
         .main {
@@ -712,7 +819,6 @@
                 <span>技术博客</span>
             </div>
             <div class="toolbar">
-                <button class="btn btn-primary" onclick="newFile()">+ 新建</button>
                 <button class="btn" onclick="openFile()">导入</button>
                 <button class="btn" onclick="handleSaveClick(event)">保存</button>
                 <button class="edit-mode-toggle" id="editModeToggle" onclick="toggleEditMode()" title="切换编辑模式">
@@ -732,8 +838,26 @@
                 <input type="text" class="search-box" placeholder="搜索..." id="searchBox" oninput="filterFiles()">
             </div>
             <div class="new-buttons">
-                <button class="btn" onclick="newFile()">📄 新建文件</button>
-                <button class="btn" onclick="newFolder()">📁 新建文件夹</button>
+                <div class="new-dropdown">
+                    <button class="new-dropdown-btn" onclick="toggleNewMenu()">
+                        <span>+</span> 新建
+                    </button>
+                    <div class="new-dropdown-menu" id="newMenu">
+                        <div class="location-selector">
+                            <div class="location-label">保存位置</div>
+                            <div class="location-tree" id="locationTree"></div>
+                        </div>
+                        <div class="new-dropdown-divider"></div>
+                        <div class="new-dropdown-item" onclick="newFile()">
+                            <span class="icon">📄</span>
+                            新建 Markdown 文件
+                        </div>
+                        <div class="new-dropdown-item" onclick="newFolder()">
+                            <span class="icon">📁</span>
+                            新建文件夹
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="file-list folder-tree" id="fileList"></div>
         </div>
@@ -780,6 +904,7 @@
         let saveTimeout = null;
         let currentTheme = 'light';
         let editMode = false; // 编辑模式状态
+        let selectedParentId = null; // 选中的父文件夹ID
 
         // API 调用函数
         async function apiCall(url, options = {}) {
@@ -986,6 +1111,63 @@
             renderFileList();
         }
 
+        // 新建下拉菜单
+        function toggleNewMenu() {
+            const menu = document.getElementById('newMenu');
+            menu.classList.toggle('show');
+            if (menu.classList.contains('show')) {
+                updateLocationTree();
+            }
+        }
+
+        // 点击外部关闭菜单
+        document.addEventListener('click', function(e) {
+            const dropdown = document.querySelector('.new-dropdown');
+            if (!dropdown.contains(e.target)) {
+                document.getElementById('newMenu').classList.remove('show');
+            }
+        });
+
+        // 更新位置选择树
+        function updateLocationTree() {
+            const tree = document.getElementById('locationTree');
+            tree.innerHTML = '';
+
+            // 根目录选项
+            const rootItem = document.createElement('div');
+            rootItem.className = `location-item ${selectedParentId === null ? 'selected' : ''}`;
+            rootItem.innerHTML = '<span class="icon">🏠</span> 根目录 (/)';
+            rootItem.onclick = () => selectLocation(null);
+            tree.appendChild(rootItem);
+
+            // 获取所有文件夹
+            const folders = Object.values(files).filter(f => f.isFolder);
+
+            // 递归渲染文件夹
+            function renderFolderOption(folder, depth = 0) {
+                const item = document.createElement('div');
+                item.className = `location-item ${selectedParentId === folder.id ? 'selected' : ''}`;
+                item.style.paddingLeft = (12 + depth * 16) + 'px';
+                item.innerHTML = `<span class="icon">📁</span> ${folder.name}`;
+                item.onclick = () => selectLocation(folder.id);
+                tree.appendChild(item);
+
+                // 渲染子文件夹
+                const children = folders.filter(f => f.parentId === folder.id);
+                children.forEach(child => renderFolderOption(child, depth + 1));
+            }
+
+            // 渲染根目录下的文件夹
+            const rootFolders = folders.filter(f => !f.parentId || f.parentId === null);
+            rootFolders.forEach(folder => renderFolderOption(folder));
+        }
+
+        // 选择位置
+        function selectLocation(parentId) {
+            selectedParentId = parentId;
+            updateLocationTree();
+        }
+
         // 筛选文件
         function filterFiles() {
             renderFileList();
@@ -1010,13 +1192,19 @@
         }
 
         // 新建文件
-        async function newFile(parentId = null) {
+        async function newFile() {
+            // 关闭下拉菜单
+            document.getElementById('newMenu').classList.remove('show');
+
             if (input.value.trim() !== '' && !confirm('确定要新建文件吗？当前未保存的内容将丢失。')) {
                 return;
             }
             const newId = 'file_' + Date.now();
             const newFileName = prompt('请输入文件名:', '新文章.md');
             if (!newFileName) return;
+
+            // 使用选中的位置
+            const parentId = selectedParentId;
 
             // 计算路径
             const parentPath = parentId && files[parentId] ? files[parentId].path + files[parentId].name + '/' : '/';
@@ -1046,9 +1234,15 @@
         }
 
         // 新建文件夹
-        async function newFolder(parentId = null) {
+        async function newFolder() {
+            // 关闭下拉菜单
+            document.getElementById('newMenu').classList.remove('show');
+
             const folderName = prompt('请输入文件夹名称:', '新文件夹');
             if (!folderName) return;
+
+            // 使用选中的位置
+            const parentId = selectedParentId;
 
             // 计算路径
             const parentPath = parentId && files[parentId] ? files[parentId].path + files[parentId].name + '/' : '/';
