@@ -94,6 +94,7 @@
         .toolbar {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
 
         .btn {
@@ -291,6 +292,47 @@
             flex-direction: column;
             border-right: 1px solid var(--border-color);
             min-width: 0;
+            transition: width 0.3s, flex 0.3s;
+        }
+
+        /* 预览模式 - 隐藏编辑器 */
+        .main.preview-mode .editor-container {
+            display: none;
+        }
+
+        .main.preview-mode .preview-container {
+            flex: 1;
+        }
+
+        /* 编辑模式按钮 */
+        .edit-mode-toggle {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .edit-mode-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-muted);
+        }
+
+        .edit-mode-toggle.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .edit-mode-toggle .icon {
+            font-size: 16px;
         }
 
         .editor-header {
@@ -555,6 +597,21 @@
             .header {
                 padding: 12px 16px;
             }
+
+            /* 移动端编辑模式 */
+            .main:not(.preview-mode) {
+                flex-direction: column;
+            }
+
+            .main:not(.preview-mode) .editor-container {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                flex: 0 0 50%;
+            }
+
+            .main:not(.preview-mode) .preview-container {
+                flex: 0 0 50%;
+            }
         }
     </style>
 </head>
@@ -569,6 +626,10 @@
                 <button class="btn btn-primary" onclick="newFile()">+ 新建</button>
                 <button class="btn" onclick="openFile()">导入</button>
                 <button class="btn" onclick="handleSaveClick(event)">保存</button>
+                <button class="edit-mode-toggle" id="editModeToggle" onclick="toggleEditMode()" title="切换编辑模式">
+                    <span class="icon">✏️</span>
+                    <span id="editModeText">编辑</span>
+                </button>
             </div>
         </div>
         <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
@@ -625,6 +686,7 @@
         let currentFileId = null;
         let saveTimeout = null;
         let currentTheme = 'light';
+        let editMode = false; // 编辑模式状态
 
         // API 调用函数
         async function apiCall(url, options = {}) {
@@ -888,6 +950,45 @@
             localStorage.setItem('theme', currentTheme);
         }
 
+        // 编辑模式切换
+        function toggleEditMode() {
+            editMode = !editMode;
+            const mainEl = document.querySelector('.main');
+            const toggleBtn = document.getElementById('editModeToggle');
+            const toggleText = document.getElementById('editModeText');
+
+            if (editMode) {
+                mainEl.classList.remove('preview-mode');
+                toggleBtn.classList.add('active');
+                toggleText.textContent = '预览';
+                toggleBtn.querySelector('.icon').textContent = '👁️';
+                input.focus();
+            } else {
+                mainEl.classList.add('preview-mode');
+                toggleBtn.classList.remove('active');
+                toggleText.textContent = '编辑';
+                toggleBtn.querySelector('.icon').textContent = '✏️';
+            }
+
+            localStorage.setItem('editMode', editMode);
+        }
+
+        // 初始化编辑模式
+        function initEditMode() {
+            const savedMode = localStorage.getItem('editMode');
+            if (savedMode === 'true') {
+                editMode = true;
+                document.querySelector('.main').classList.remove('preview-mode');
+                document.getElementById('editModeToggle').classList.add('active');
+                document.getElementById('editModeText').textContent = '预览';
+                document.getElementById('editModeToggle').querySelector('.icon').textContent = '👁️';
+            } else {
+                // 默认预览模式
+                document.querySelector('.main').classList.add('preview-mode');
+                editMode = false;
+            }
+        }
+
         // 初始化主题
         function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -914,6 +1015,7 @@
         // 初始化
         async function init() {
             initTheme();
+            initEditMode();
             await loadFilesFromCloud();
             const firstFile = Object.values(files)[0];
             if (firstFile) {
