@@ -843,7 +843,7 @@
                         <span>+</span> 新建
                     </button>
                     <div class="new-dropdown-menu" id="newMenu">
-                        <div class="location-selector">
+                        <div class="location-selector" onclick="event.stopPropagation()">
                             <div class="location-label">保存位置</div>
                             <div class="location-tree" id="locationTree"></div>
                         </div>
@@ -1137,7 +1137,7 @@
             const rootItem = document.createElement('div');
             rootItem.className = `location-item ${selectedParentId === null ? 'selected' : ''}`;
             rootItem.innerHTML = '<span class="icon">🏠</span> 根目录 (/)';
-            rootItem.onclick = () => selectLocation(null);
+            rootItem.onclick = (e) => { e.stopPropagation(); selectLocation(null); };
             tree.appendChild(rootItem);
 
             // 获取所有文件夹
@@ -1149,7 +1149,7 @@
                 item.className = `location-item ${selectedParentId === folder.id ? 'selected' : ''}`;
                 item.style.paddingLeft = (12 + depth * 16) + 'px';
                 item.innerHTML = `<span class="icon">📁</span> ${folder.name}`;
-                item.onclick = () => selectLocation(folder.id);
+                item.onclick = (e) => { e.stopPropagation(); selectLocation(folder.id); };
                 tree.appendChild(item);
 
                 // 渲染子文件夹
@@ -1166,6 +1166,7 @@
         function selectLocation(parentId) {
             selectedParentId = parentId;
             updateLocationTree();
+            // 不关闭菜单，让用户继续创建文件
         }
 
         // 筛选文件
