@@ -1021,16 +1021,72 @@
 
             // 按路径组织文件
             const fileArray = Object.values(files);
-            const rootItems = fileArray.filter(f => !f.parentId || f.parentId === null);
             const folderState = JSON.parse(localStorage.getItem('folderState') || '{}');
 
-            // 渲染根目录项目
-            renderItems(rootItems, fileListEl, folderState, filterText);
+            if (filterText) {
+                // 搜索模式：显示所有匹配的文件，显示路径
+                const matchedFiles = fileArray.filter(f =>
+                    !f.isFolder && f.name.toLowerCase().includes(filterText)
+                );
+
+                if (matchedFiles.length === 0) {
+                    fileListEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">未找到匹配的文件</div>';
+                    return;
+                }
+
+                matchedFiles
+                    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                    .forEach(file => {
+                        const item = document.createElement('div');
+                        const isInFolder = file.parentId && file.parentId !== null;
+                        item.className = `file-item ${file.id === currentFileId ? 'active' : ''}`;
+                        const date = new Date(file.updatedAt).toLocaleDateString('zh-CN');
+                        const pathStr = getFilePath(file);
+                        item.innerHTML = `
+                            <span class="file-icon">📄</span>
+                            <div>
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-meta">${pathStr}</div>
+                            </div>
+                            <div class="file-actions">
+                                <button class="icon-btn" onclick="event.stopPropagation(); renameFile('${file.id}')" title="重命名">✎</button>
+                                <button class="icon-btn" onclick="event.stopPropagation(); deleteFile('${file.id}')" title="删除">✕</button>
+                            </div>
+                        `;
+                        item.onclick = () => switchFile(file.id);
+                        fileListEl.appendChild(item);
+                    });
+            } else {
+                // 正常模式：显示树形结构
+                const rootItems = fileArray.filter(f => !f.parentId || f.parentId === null);
+                renderItems(rootItems, fileListEl, folderState, filterText);
+            }
+        }
+
+        // 获取文件完整路径
+        function getFilePath(file) {
+            if (!file.parentId || file.parentId === null) {
+                return '/';
+            }
+            const parent = files[file.parentId];
+            if (!parent) {
+                return '/';
+            }
+            const parentPath = getFilePath(parent);
+            return parentPath === '/' ? `/${parent.name}` : `${parentPath}/${parent.name}`;
         }
 
         function renderItems(items, container, folderState, filterText) {
             items
-                .filter(item => item.name.toLowerCase().includes(filterText))
+                .filter(item => {
+                    if (item.isFolder) {
+                        // 文件夹：检查自身是否匹配，或者是否有子项匹配
+                        const children = Object.values(files).filter(f => f.parentId === item.id);
+                        return item.name.toLowerCase().includes(filterText) ||
+                               children.some(child => hasMatchingDescendant(child, filterText));
+                    }
+                    return item.name.toLowerCase().includes(filterText);
+                })
                 .sort((a, b) => {
                     // 文件夹在前，文件在后
                     if (a.isFolder && !b.isFolder) return -1;
@@ -1045,6 +1101,15 @@
                         renderFile(item, container, filterText);
                     }
                 });
+        }
+
+        // 检查是否有匹配的后代
+        function hasMatchingDescendant(item, filterText) {
+            if (item.name.toLowerCase().includes(filterText)) {
+                return true;
+            }
+            const children = Object.values(files).filter(f => f.parentId === item.id);
+            return children.some(child => hasMatchingDescendant(child, filterText));
         }
 
         function renderFolder(folder, container, folderState, filterText) {
@@ -1076,7 +1141,15 @@
                 childContainer.id = `folder-${folder.id}`;
                 container.appendChild(childContainer);
 
-                renderItems(children, childContainer, folderState, filterText);
+                // 过滤子项目
+                const filteredChildren = children.filter(child => {
+                    if (child.isFolder) {
+                        return hasMatchingDescendant(child, filterText);
+                    }
+                    return child.name.toLowerCase().includes(filterText);
+                });
+
+                renderItems(filteredChildren, childContainer, folderState, filterText);
             }
         }
 
