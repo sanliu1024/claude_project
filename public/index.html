@@ -279,7 +279,96 @@
             color: var(--text-primary);
         }
 
-        /* Main Content */
+        /* 文件夹树形结构 */
+        .folder-tree {
+            user-select: none;
+        }
+
+        .folder-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .folder-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .folder-item.active {
+            background: var(--bg-tertiary);
+        }
+
+        .folder-toggle {
+            font-size: 10px;
+            width: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .folder-toggle.open {
+            transform: rotate(90deg);
+        }
+
+        .folder-icon {
+            font-size: 14px;
+        }
+
+        .folder-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-actions {
+            display: none;
+            gap: 4px;
+        }
+
+        .folder-item:hover .folder-actions {
+            display: flex;
+        }
+
+        .folder-children {
+            display: none;
+            padding-left: 16px;
+        }
+
+        .folder-children.open {
+            display: block;
+        }
+
+        .file-item.in-folder {
+            padding-left: 32px;
+        }
+
+        /* 根目录文件样式 */
+        .root-files {
+            padding-left: 0;
+        }
+
+        /* 新建按钮区域 */
+        .new-buttons {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .new-buttons .btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
         .main {
             flex: 1;
             display: flex;
@@ -639,10 +728,14 @@
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-title">文章列表</div>
-                <input type="text" class="search-box" placeholder="搜索文章..." id="searchBox" oninput="filterFiles()">
+                <div class="sidebar-title">文件浏览器</div>
+                <input type="text" class="search-box" placeholder="搜索..." id="searchBox" oninput="filterFiles()">
             </div>
-            <div class="file-list" id="fileList"></div>
+            <div class="new-buttons">
+                <button class="btn" onclick="newFile()">📄 新建文件</button>
+                <button class="btn" onclick="newFolder()">📁 新建文件夹</button>
+            </div>
+            <div class="file-list folder-tree" id="fileList"></div>
         </div>
         <div class="main">
             <div class="editor-container">
@@ -715,6 +808,9 @@
                             id: file.id,
                             name: file.name,
                             content: file.content,
+                            isFolder: file.is_folder || false,
+                            parentId: file.parent_id || null,
+                            path: file.path || '/',
                             updatedAt: file.updated_at || new Date().toISOString()
                         };
                     });
@@ -736,12 +832,18 @@
                 {
                     id: 'welcome',
                     name: '欢迎使用.md',
-                    content: '# 欢迎使用技术博客编辑器\n\n这是一个支持 Markdown 的实时预览编辑器。\n\n## 功能特性\n\n- **实时预览**：左侧编辑，右侧实时渲染\n- **云端存储**：所有文件保存在云端数据库\n- **深色主题**：支持深色/浅色主题切换\n- **代码高亮**：支持代码语法高亮\n\n## 代码示例\n\n```javascript\nfunction hello() {\n    console.log("Hello, World!");\n}\n```\n\n## 快捷键\n\n| 快捷键 | 功能 |\n|--------|------|\n| Ctrl+S | 保存 |\n| Ctrl+N | 新建 |\n| Ctrl+O | 打开 |\n\n开始你的写作之旅吧！'
+                    content: '# 欢迎使用技术博客编辑器\n\n这是一个支持 Markdown 的实时预览编辑器。\n\n## 功能特性\n\n- **实时预览**：左侧编辑，右侧实时渲染\n- **云端存储**：所有文件保存在云端数据库\n- **深色主题**：支持深色/浅色主题切换\n- **代码高亮**：支持代码语法高亮\n\n## 代码示例\n\n```javascript\nfunction hello() {\n    console.log("Hello, World!");\n}\n```\n\n## 快捷键\n\n| 快捷键 | 功能 |\n|--------|------|\n| Ctrl+S | 保存 |\n| Ctrl+N | 新建 |\n| Ctrl+O | 打开 |\n\n开始你的写作之旅吧！',
+                    isFolder: false,
+                    parentId: null,
+                    path: '/'
                 },
                 {
                     id: 'tutorial',
                     name: 'Markdown 教程.md',
-                    content: '# Markdown 基础教程\n\n## 标题\n\n使用 `#` 来创建标题，支持 1-6 级。\n\n## 文本样式\n\n- **粗体**：使用 `**文本**`\n- *斜体*：使用 `*文本*`\n- ~~删除线~~：使用 `~~文本~~`\n\n## 列表\n\n- 无序列表项 1\n- 无序列表项 2\n\n1. 有序列表项 1\n2. 有序列表项 2\n\n## 代码\n\n行内代码：`code`\n\n代码块：\n\n```python\ndef hello():\n    print("Hello, World!")\n```\n\n## 链接和图片\n\n[链接文本](https://example.com)\n\n## 引用\n\n> 这是一段引用文本。'
+                    content: '# Markdown 基础教程\n\n## 标题\n\n使用 `#` 来创建标题，支持 1-6 级。\n\n## 文本样式\n\n- **粗体**：使用 `**文本**`\n- *斜体*：使用 `*文本*`\n- ~~删除线~~：使用 `~~文本~~`\n\n## 列表\n\n- 无序列表项 1\n- 无序列表项 2\n\n1. 有序列表项 1\n2. 有序列表项 2\n\n## 代码\n\n行内代码：`code`\n\n代码块：\n\n```python\ndef hello():\n    print("Hello, World!")\n```\n\n## 链接和图片\n\n[链接文本](https://example.com)\n\n## 引用\n\n> 这是一段引用文本。',
+                    isFolder: false,
+                    parentId: null,
+                    path: '/'
                 }
             ];
 
@@ -791,32 +893,97 @@
             }, 1000);
         }
 
-        // 渲染文件列表
+        // 渲染文件列表（支持文件夹树形结构）
         function renderFileList() {
             const filterText = searchBox.value.toLowerCase();
             fileListEl.innerHTML = '';
 
-            Object.values(files)
-                .filter(file => file.name.toLowerCase().includes(filterText))
-                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-                .forEach(file => {
-                    const item = document.createElement('div');
-                    item.className = `file-item ${file.id === currentFileId ? 'active' : ''}`;
-                    const date = new Date(file.updatedAt).toLocaleDateString('zh-CN');
-                    item.innerHTML = `
-                        <span class="file-icon">📄</span>
-                        <div>
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-meta">${date}</div>
-                        </div>
-                        <div class="file-actions">
-                            <button class="icon-btn" onclick="event.stopPropagation(); renameFile('${file.id}')">✎</button>
-                            <button class="icon-btn" onclick="event.stopPropagation(); deleteFile('${file.id}')">✕</button>
-                        </div>
-                    `;
-                    item.onclick = () => switchFile(file.id);
-                    fileListEl.appendChild(item);
+            // 按路径组织文件
+            const fileArray = Object.values(files);
+            const rootItems = fileArray.filter(f => !f.parentId || f.parentId === null);
+            const folderState = JSON.parse(localStorage.getItem('folderState') || '{}');
+
+            // 渲染根目录项目
+            renderItems(rootItems, fileListEl, folderState, filterText);
+        }
+
+        function renderItems(items, container, folderState, filterText) {
+            items
+                .filter(item => item.name.toLowerCase().includes(filterText))
+                .sort((a, b) => {
+                    // 文件夹在前，文件在后
+                    if (a.isFolder && !b.isFolder) return -1;
+                    if (!a.isFolder && b.isFolder) return 1;
+                    // 同类型按更新时间排序
+                    return new Date(b.updatedAt) - new Date(a.updatedAt);
+                })
+                .forEach(item => {
+                    if (item.isFolder) {
+                        renderFolder(item, container, folderState, filterText);
+                    } else {
+                        renderFile(item, container, filterText);
+                    }
                 });
+        }
+
+        function renderFolder(folder, container, folderState, filterText) {
+            const isOpen = folderState[folder.id] !== false; // 默认打开
+            const item = document.createElement('div');
+            item.className = 'folder-item';
+
+            // 获取子项目
+            const children = Object.values(files).filter(f => f.parentId === folder.id);
+            const hasChildren = children.length > 0;
+
+            item.innerHTML = `
+                <span class="folder-toggle ${isOpen && hasChildren ? 'open' : ''}" onclick="event.stopPropagation(); toggleFolder('${folder.id}')">${hasChildren ? '▶' : ''}</span>
+                <span class="folder-icon">📁</span>
+                <span class="folder-name">${folder.name}</span>
+                <div class="folder-actions">
+                    <button class="icon-btn" onclick="event.stopPropagation(); renameFile('${folder.id}')" title="重命名">✎</button>
+                    <button class="icon-btn" onclick="event.stopPropagation(); deleteFile('${folder.id}')" title="删除">✕</button>
+                </div>
+            `;
+
+            item.onclick = () => toggleFolder(folder.id);
+            container.appendChild(item);
+
+            // 渲染子项目
+            if (hasChildren) {
+                const childContainer = document.createElement('div');
+                childContainer.className = `folder-children ${isOpen ? 'open' : ''}`;
+                childContainer.id = `folder-${folder.id}`;
+                container.appendChild(childContainer);
+
+                renderItems(children, childContainer, folderState, filterText);
+            }
+        }
+
+        function renderFile(file, container, filterText) {
+            const item = document.createElement('div');
+            const isInFolder = file.parentId && file.parentId !== null;
+            item.className = `file-item ${file.id === currentFileId ? 'active' : ''} ${isInFolder ? 'in-folder' : ''}`;
+            const date = new Date(file.updatedAt).toLocaleDateString('zh-CN');
+            item.innerHTML = `
+                <span class="file-icon">📄</span>
+                <div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-meta">${date}</div>
+                </div>
+                <div class="file-actions">
+                    <button class="icon-btn" onclick="event.stopPropagation(); renameFile('${file.id}')" title="重命名">✎</button>
+                    <button class="icon-btn" onclick="event.stopPropagation(); deleteFile('${file.id}')" title="删除">✕</button>
+                </div>
+            `;
+            item.onclick = () => switchFile(file.id);
+            container.appendChild(item);
+        }
+
+        function toggleFolder(folderId) {
+            const folderState = JSON.parse(localStorage.getItem('folderState') || '{}');
+            folderState[folderId] = folderState[folderId] === false ? true : false;
+            localStorage.setItem('folderState', JSON.stringify(folderState));
+            renderFileList();
         }
 
         // 筛选文件
@@ -843,7 +1010,7 @@
         }
 
         // 新建文件
-        async function newFile() {
+        async function newFile(parentId = null) {
             if (input.value.trim() !== '' && !confirm('确定要新建文件吗？当前未保存的内容将丢失。')) {
                 return;
             }
@@ -851,10 +1018,17 @@
             const newFileName = prompt('请输入文件名:', '新文章.md');
             if (!newFileName) return;
 
+            // 计算路径
+            const parentPath = parentId && files[parentId] ? files[parentId].path + files[parentId].name + '/' : '/';
+            const newPath = parentPath;
+
             const newFile = {
                 id: newId,
                 name: newFileName,
-                content: ''
+                content: '',
+                isFolder: false,
+                parentId: parentId,
+                path: newPath
             };
 
             files[newId] = newFile;
@@ -871,32 +1045,91 @@
             switchFile(newId);
         }
 
-        // 删除文件
-        async function deleteFile(fileId) {
-            if (!confirm('确定要删除这个文件吗？')) return;
+        // 新建文件夹
+        async function newFolder(parentId = null) {
+            const folderName = prompt('请输入文件夹名称:', '新文件夹');
+            if (!folderName) return;
 
-            const fileIds = Object.keys(files);
-            if (fileIds.length <= 1) {
-                alert('至少保留一个文件！');
-                return;
-            }
+            // 计算路径
+            const parentPath = parentId && files[parentId] ? files[parentId].path + files[parentId].name + '/' : '/';
+            const newPath = parentPath;
+
+            const newId = 'folder_' + Date.now();
+            const newFolder = {
+                id: newId,
+                name: folderName,
+                content: '',
+                isFolder: true,
+                parentId: parentId,
+                path: newPath
+            };
+
+            files[newId] = newFolder;
 
             try {
+                await apiCall(API_BASE, {
+                    method: 'POST',
+                    body: JSON.stringify(newFolder)
+                });
+            } catch (error) {
+                console.error('创建文件夹失败:', error);
+            }
+
+            renderFileList();
+        }
+
+        // 删除文件或文件夹
+        async function deleteFile(fileId) {
+            const item = files[fileId];
+            if (!item) return;
+
+            // 获取子项目数量
+            const children = Object.values(files).filter(f => f.parentId === fileId);
+            const message = item.isFolder
+                ? `确定要删除文件夹 "${item.name}" 吗？${children.length > 0 ? `（包含 ${children.length} 个子项目）` : ''}`
+                : `确定要删除文件 "${item.name}" 吗？`;
+
+            if (!confirm(message)) return;
+
+            try {
+                // 如果是文件夹，先删除所有子文件
+                if (item.isFolder) {
+                    const deleteChildren = (parentId) => {
+                        const childItems = Object.values(files).filter(f => f.parentId === parentId);
+                        childItems.forEach(child => {
+                            if (child.isFolder) {
+                                deleteChildren(child.id);
+                            }
+                            delete files[child.id];
+                        });
+                    };
+                    deleteChildren(fileId);
+                }
+
                 await apiCall(`${API_BASE}/${fileId}`, {
                     method: 'DELETE'
                 });
             } catch (error) {
-                console.error('删除文件失败:', error);
+                console.error('删除失败:', error);
             }
 
             delete files[fileId];
 
+            // 如果删除的是当前文件，切换到其他文件
             if (currentFileId === fileId) {
-                const remainingFiles = Object.values(files);
-                switchFile(remainingFiles[0].id);
-            } else {
-                renderFileList();
+                const remainingFiles = Object.values(files).filter(f => !f.isFolder);
+                if (remainingFiles.length > 0) {
+                    switchFile(remainingFiles[0].id);
+                } else {
+                    currentFileId = null;
+                    currentFilename = '未命名.md';
+                    input.value = '';
+                    filenameEl.textContent = currentFilename;
+                    render();
+                }
             }
+
+            renderFileList();
         }
 
         // 重命名文件

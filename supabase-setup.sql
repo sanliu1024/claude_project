@@ -1,10 +1,13 @@
 -- 在 Supabase SQL Editor 中运行此脚本
 
--- 创建 files 表
+-- 创建 files 表（支持文件夹）
 CREATE TABLE IF NOT EXISTS files (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  content TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  is_folder BOOLEAN DEFAULT FALSE,
+  parent_id TEXT,
+  path TEXT DEFAULT '/',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
